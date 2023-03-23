@@ -1,0 +1,2 @@
+api vk = 5.131
+C:\Users\vlade\OneDrive\Рабочий стол\ДОКУМ\pythonProject
