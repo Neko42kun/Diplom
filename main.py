@@ -107,7 +107,34 @@ def get_photos(user_id):
             return photo_data
         return False
     except vk_api.exceptions.ApiError as error:
-        print(error)
+        return False
+
+
+def search_output(user_id, found_users):
+    random_id = randint(0, len(found_users) - 1)
+    while check_users(found_users[random_id]['id']) == False:
+        found_users.pop(random_id)
+        random_id = randint(0, len(found_users) - 1)
+    insert_users(found_users[random_id]['id'])
+    user_photos = get_photos(found_users[random_id]['id'])
+    if user_photos != False:
+        write_msg(user_id, f"vk.com/id{found_users[random_id]['id']}")
+        for k in range(3):
+            write_msg(user_id, f"vk.com/photo{user_photos['user_id']}_{user_photos['photo_ids'][k]}")
+        write_msg(event.user_id, "Для поиска следующего партнёра введите далее")
+    else:
+        found_users.pop(random_id)
+    return found_users
+
+
+def continue_searching(user_id, found_users):
+    for event in longpoll.listen():
+        if event.type == VkEventType.MESSAGE_NEW:
+            if event.to_me:
+                request = event.text
+                if request == "далее" or request == "Далее":
+                    search_output(user_id, found_users)
+
 
 
 create_db()
@@ -122,16 +149,8 @@ for event in longpoll.listen():
                 user_info = get_user_info(event.user_id)
                 get_add_info(event.user_id, user_info)
                 found_users = find_users(user_info)
-                random_id = randint(0, len(found_users)-1)
-                while check_users(found_users[random_id]['id']) == False:
-                    found_users.pop(random_id)
-                    random_id = randint(0, len(found_users) - 1)
-                insert_users(found_users[random_id]['id'])
-                user_photos = get_photos(found_users[random_id]['id'])
-                write_msg(event.user_id, f"Хай, vk.com/id{found_users[random_id]['id']}")
-                if user_photos != False:
-                    for k in range(3):
-                        write_msg(event.user_id, f"vk.com/photo{user_photos['user_id']}_{user_photos['photo_ids'][k]}")
+                found_users = search_output(event.user_id, found_users)
+                continue_searching(event.user_id, found_users)
 
             elif request == "пока":
                 write_msg(event.user_id, "Пока((")
